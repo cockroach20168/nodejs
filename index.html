@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Socket</title>
+    <script type="text/javascript" src="http://192.168.0.46:8080/socket.io/socket.io.js"></script>
+</head>
+
+<body>
+<script type="text/javascript">
+    function freshTable(innerTable, tableView) {
+        while(tableView.rows.length > 0){
+            tableView.deleteRow(0);
+        }
+        innerTable.forEach(function (line) {
+            var newRow = tableView.insertRow();
+            for(var temp in line){
+                var tempCell = newRow.insertCell(-1);
+                tempCell.innerText = line[temp];
+            }
+        })
+    }
+    var socket = io.connect('http://192.168.0.46:8080');
+    var innerTable = new Array();
+    socket.emit('getTable', {value:'EMS_EQUIPMENTS'});
+    socket.on('tableReturn', function (data) {
+        var mytable = document.getElementById("table");
+        data.forEach(function (line) {
+            innerTable.push(line);
+        });
+        freshTable(innerTable, mytable);
+    });
+    socket.on('update', function (data) {
+        var mytable = document.getElementById("table");
+        console.log(data);
+        console.log(data.toDelete);
+        var toDelete = new Map();
+        data.toDelete.forEach(function (value) {
+            toDelete.set(value, 1);
+        });
+        console.log(toDelete);
+        for(var i = 0; i < innerTable.length; i++){
+            //console.log(innerTable[i]);
+            if(toDelete.has(innerTable[i].EQUIPMENT_KEY)){
+                console.log("delete on innertable:"+i);
+                innerTable.splice(i, 1);
+                console.log(innerTable);
+                i--;
+            }
+        }
+        data.toAdd.forEach(function (value) {
+            innerTable.splice(value.rowNum, 0, value.row);
+        });
+        freshTable(innerTable, mytable);
+    });
+
+</script>
+<table border="1" id="table">
+
+</table>
+</body>
+</html>
